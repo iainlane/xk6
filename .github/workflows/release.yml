@@ -8,19 +8,16 @@ on:
       - 'v*.*.*'
 
 jobs:
-  docker:
-    name: Build and publish Docker image
+  binary:
+    name: Build and test xk6 binary
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [ linux/amd64, linux/arm64 ]
     env:
       IMAGE_REPOSITORY: ${{ github.repository }}
       VERSION: ${{ github.ref_name }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: Build image
-        run: docker build -t "$IMAGE_REPOSITORY" .
       - name: Build k6 binary
         run: |
             docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/xk6" \
@@ -32,6 +29,27 @@ jobs:
             ./k6 version
             ./k6 version | grep -qz 'xk6-output-influxdb.*xk6-kafka'
 
+  docker:
+    name: Build and publish Docker image
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_REPOSITORY: ${{ github.repository }}
+      VERSION: ${{ github.ref_name }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Build image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: false
       - name: Log into ghcr.io
         if: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v') }}
         run: |
