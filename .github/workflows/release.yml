@@ -64,7 +64,7 @@ jobs:
             latest=false
           tags: |
             # tag: master
-            type=raw,value=master,enable=${{ github.ref == 'refs/heads/master' }}
+            type=raw,value=master,enable=${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/iainlane') }}
             # tag: major.minor.patch on tag events
             type=semver,pattern={{version}}
             # tag latest on stable tag pushes
